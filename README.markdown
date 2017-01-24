@@ -1,1 +1,1 @@
-Working on a programming language
+8-bit computer from scratch. Currently working on a programming language.
