@@ -1,0 +1,246 @@
+---
+vim: filetype=markdown
+title: GroundUp Language Informal Spec
+author:
+-   Chris McKinney
+-   Alyssa Shofner
+date: Jan 22 2017
+geometry: margin=1in
+header-includes:
+-   \usepackage{pifont}
+-   \newcommand{\cmark}{\text{\ding{51}}}
+-   \newcommand{\xmark}{\text{\ding{55}}}
+-   \usepackage{color}
+-   \let\oldhref\href
+-   \renewcommand{\href}[2]{\textcolor{blue}{\oldhref{#1}{#2}}}
+-   \usepackage{titling}
+-   \setlength{\droptitle}{-70pt}
+---
+
+```
+<program>   ::= <section declaration>
+                <inclusion>*
+                <body part>*
+
+<section declaration>   ::= "section" <section path> ";"
+
+<section path>  ::= <identifier> ( ":" <identifier> )*
+
+<identifier>    ::= <letter> ( <letter> | <digit> )*
+
+<letter>    ::= "a"-"z" | "A"-"Z" | "_"
+
+<digit>     ::= "0"-"9"
+
+<inclusion> ::= "include" <section path>
+                ( ":" "[" <identifier> ( "," <identifier> )* "]" )? ";"
+
+<body part> ::= <global variable declaration> ";" | <record declaration> |
+                <global function declaration> | <class declaration> |
+                <cast declaration> | <operation declaration>
+```
+
+Variables
+=========
+
+```
+<global variable declaration>   ::= <global access specifier>?
+                                    <variable declaration>
+
+<global access specifier>   ::= "sheltered" | "public"
+
+<variable declaration>  ::= "const"? <type path> <vardecl element>
+                            ( "," <vardecl element> )*
+
+<type path> ::= <builtin type> | <record type> | <class type>
+
+<record type>   ::= <section path>
+
+<class type>    ::= <section path>
+
+<builtin type>  ::= <number type> | <pointer type> | <array type>
+
+<number type>   ::= "unsigned" | ( "signed" | "unsigned" )?
+                    ( <integer type> | <fixed type> | "char" )
+
+<integer type>  ::= "int" | "long" | "long int"
+
+<fixed type>    ::= ( "fixed" | "long fixed" ) ( "(" <digit>+ ")" )?
+
+<pointer type>  ::= <type path> "*"
+
+<array type>    ::= <type path> "[" <unsigned integer literal>? "]"
+
+<vardecl element>   ::= <identifier> ( "=" <constant expression> )?
+```
+
+Expressions
+-----------
+
+```
+<constant expression>   ::= <expression (with no variables or function calls)>
+
+<expression>    ::= "(" <expression> ")" | <variable path> | <cast> |
+                    <allocation> | <array expression> | <record expression> |
+                    <function call> | <array access> | <member access> |
+                    <literal> | <operation>
+
+<variable path> ::= <section path>
+
+<cast>  ::= "(" <type path> ")" <expression>
+
+<allocation>    ::= "alloc" <type path> ( "[" <expression> "]" |
+                    "(" <argument>? ( "," <argument> )* ")" )?
+
+<argument>  ::= ( <identifier> "=" )? <expression>
+
+<array expression>  ::= "[" <expression>? ( "," <expression> )* "]"
+
+<record expression> ::= <record type> "(" <argument>? ( "," <argument> )* ")"
+
+<function call> ::= <expression> "(" <argument>? ( "," <argument> )* ")"
+
+<array access>  ::= <expression> "[" <expression> "]"
+
+<member access> ::= <expression> ( "." | "->" ) <identifier>
+```
+
+### Literals
+
+```
+<literal>   ::= <integer literal> | <fixed literal> | <character literal> |
+                <string literal>
+
+<integer literal>   ::= ( "+" | "-" )? <unsigned integer literal>
+
+<unsigned integer literal>  ::= ( <digit>+ | "0x" <hexdigit>+ ) ( "C" | "L" )?
+
+<fixed literal>     ::= ( "+" | "-" )? <unsigned fixed literal>
+
+<unsigned fixed literal>    ::= <digit>+ "." <digit>+ "L"? ( "_" <digit>+ )?
+
+<character literal> ::= "'" ( <ASCII character " "-"~" except "'" and "\"> |
+                        <escape sequence> ) "'"
+
+<escape sequence>   ::= "\x" <hexdigit>{2} | "\a" | "\b" | "\f" | "\n" | "\r" |
+                        "\t" | "\v" | "\\" | "\'" | "\"" | "\?" | "\0"
+
+<string literal>    ::= """ ( <ASCII character " "-"~" except """ and "\"> |
+                        <escape sequence> )* """
+```
+
+### Operations
+
+```
+<operation> ::= <unary operation> | <binary operation> | <constant operation>
+
+<unary operation>   ::= <prefix operation> | <postfix operation>
+
+<prefix operation>  ::= ( "+" | "-" | "++" | "--" | "~" | "!" | "&" | "*" |
+                        "recordtypeof" ) <expression>
+
+<postfix operation> ::= <expression> ( "++" | "--" )
+
+<binary operation>  ::= <expression> ( "+" | "-" | "*" | "<<" | ">>" | ">>>" |
+                        "&" | "^" | "|" | "==" | "!=" | "<" | "<=" | ">" |
+                        ">=" | "&&" | "||" ) <expression>
+
+<constant operation>    ::= <expression> ( "/" | "%" ) <constant expression>
+```
+
+Records
+=======
+
+```
+<record declaration>    ::= <global access specifier>? "const"? "record"
+                            <identifier> ( "(" "subset" <record type> ")" )?
+                            "{" ( <record variable declaration> ";" )* "}"
+
+<record variable declaration>   ::= <global variable declaration>
+```
+
+Functions
+=========
+
+```
+<global function declaration>   ::= <global access specifier>?
+                                    <function declaration>
+
+<function declaration>  ::= "pure"? <type path> "function" <identifier>
+                            "(" <variable declaration>?
+                            ( "," <variable declaration> )* ")" "{"
+                            ( <live variable declaration> ";" )* <statement>*
+                            "}"
+
+<live variable declaration> ::= "const"? <type path> <live vardecl element>
+                                ( "," <live vardecl element> )*
+
+<live vardecl element>  ::= <identifier> ( "=" <expression> )?
+```
+
+Statements
+----------
+
+```
+<statement> ::= <expression> ";" | "{" <statement>* "}" | <if statement> |
+                "return" <expression>? ";" | <assignment statement> ";" |
+                ( "break" | "continue" ) <identifier>? ";" |
+                <loop statement> | "free" <expression> ";"
+
+<if statement>  ::= "if" "(" <expression> ")" <statement>
+                    ( "else" <statement> )?
+
+<assignment statement>  ::= <expression> ( <assignment> |
+                            <constop assignment> )
+
+<assignment>    ::= ( "+" | "-" | "*" | "<<" | ">>" | ">>>" | "&" | "^" | "|"
+                    )? "=" <expression>
+
+<constop assignment>    ::= ( "/" | "%" ) "=" <constant expression>
+
+<loop statement>    ::= "@" <identifier> ( <while statement> |
+                        <for statement> | <for each statement> )
+
+<while statement>   ::= "while" "(" <expression> ")" <statement>
+
+<for statement> ::= "for" "(" ( <live variable declaration> |
+                    <assignment statement> | <expression> )? ";" <expression>?
+                    ";" ( <assignment statement> | <expression> )? ")"
+                    <statement>
+
+<for each statement>    ::= "for" "(" <type path> <identifier> ":" <expression>
+                            ")" <statement>
+```
+
+Classes
+=======
+
+```
+<class declaration> ::= "abstract"? "class" <identifier> ( "(" "subclass"
+                        <class type> ( "," <class type> )* ")" )? "{"
+                        <class body part>* "}"
+
+<class body part>   ::= <member variable declaration> ";" |
+                        <method declaration>
+
+<member variable declaration>   ::= <member access specifier>?
+                                    <variable declaration>
+
+<member access specifier>   ::= "private" | "sheltered" | "protected" |
+                                "public"
+
+<method declaration>    ::= <member access specifier>? "abstract"?
+                            <function declaration>
+```
+
+Overloading
+===========
+
+```
+<cast declaration>  ::= "implicit"? <type path> "cast" "(" <type path> ")"
+                        <identifier> "=" <expression> ";"
+
+<operation declaration> ::= "commutative"? "operation" "(" <type path>
+                            ( "," <type path> )* ")"
+                            ( <operation> | <array access> ) "=" <expression>
+```

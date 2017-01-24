@@ -1,0 +1,178 @@
+/* vim: set syntax=groundup : */
+section std;
+
+/* Note: the records in this file are meant only for reference. The compiler
+ * will treat these types specially. (Note especially references to MAGIC.) */
+
+
+/* The language will keep record information in memory, each entry at a unique
+ * location so that equality comparisons work on RecordTypes. */
+public const record RecordInfo {
+    RecordType superset;
+    unsigned bytes;
+}
+public record RecordType { RecordInfo* _; }
+
+
+/* Empty record for generic pointers and void functions. */
+public record Void {}
+
+/* Record wrappers for the basic builtin types. The underscores mean that these
+ * records "act like" their primitive counterparts. */
+public record Char { char _; }
+public record SignedChar { signed char _; }
+public record Int { int _; }
+public record Unsigned { unsigned _; }
+public record Long { long _; }
+public record UnsignedLong { unsigned long _; }
+/* Note that information is lost about these types when they are boxed. */
+public record Fixed { int data; }
+public record UnsignedFixed { unsigned data; }
+public record LongFixed { long data; }
+public record UnsignedLongFixed { unsigned long data; }
+public record Pointer { Void* _; }
+
+/* Null pointer is just a zero. */
+public const Pointer null = (Pointer)0;
+
+
+/* Boolean values are stored as bytes. */
+public record Bool (subset Char) {}
+
+/* Boolean constants. */
+public const Bool false = Bool(0)
+public const Bool true = Bool(1)
+
+
+/* First-order arrays store length for bounds checking and deallocation. */
+public record Array {
+    Pointer data;
+    unsigned length;
+    unsigned elemBytes;
+}
+
+/* Member (compile-time unsized) arrays store memory footprint for
+ * deallocation. */
+sheltered record MemberArray {
+    Pointer data;
+    unsigned bytes;
+}
+
+/* Static (compile-time sized) arrays are just pointers. */
+sheltered record StaticArray {
+    Pointer data;
+}
+
+/* First order arrays have simple element access. Access for member and static
+ * arrays is MAGIC. */
+public pure Pointer function array_access(Array array, unsigned index) {
+    if (index >= array.length)
+        return null;
+    return array.data + index*array.elemBytes;
+}
+
+/* Negative numbers for array access index from the end, with -1 being the last
+ * element. (Note: not sure about this feature.) */
+public pure Pointer function array_access_signed(Array array, int index) {
+    if (index >= 0)
+        return array_access(array, (unsigned)index);
+    if ((unsigned)(-index) > array.length)
+        return null;
+    return array.data + (array.length + index)*array.elemBytes;
+}
+
+operation (Array, unsigned) a[i] = *(MAGIC*)array_access(a, i);
+operation (Array, int) a[i] = *(MAGIC*)array_access_signed(a, i);
+
+/* You can cast compiler-created arrays up, but not back down. */
+implicit MemberArray cast (Array)a = Array(a.data, MAGIC, MAGIC);
+implicit StaticArray cast (Array)a = Array(a.data, MAGIC, MAGIC);
+implicit StaticArray cast (MemberArray)a = MemberArray(a.data, MAGIC);
+
+
+/* First-order functions are pointers with argument list and return value byte
+ * sizes for call checking. */
+public record Function {
+    Pointer location;
+    int argumentBytes;
+    int returnBytes;
+}
+
+/* Static (compile-time) functions are just pointers. Metadata is excluded for
+ * efficiency, since the compiler knows the size of the argument list and
+ * return values. */
+sheltered const record StaticFunction {
+    Pointer location;
+}
+
+/* This is the type of static functions declared pure. They have been checked
+ * by the compiler to ensure they have no side effects. */
+sheltered const record PureStaticFunction (subset StaticFunction) {}
+
+/* Again, you can cast up, but not down. */
+implicit StaticFunction cast (Function)f = Function(f.location, MAGIC, MAGIC);
+
+
+/* Node for vtable tree. */
+sheltered record VTableTreeNode {
+    Class* key = null;
+    StaticFunction[] vtable = [];
+    VTableTreeNode* left = null;
+    VTableTreeNode* right = null;
+}
+
+/* Superclass vtables are located using a binary search tree with class
+ * pointers for keys and vtables for values. The tree should be constructed at
+ * compile time as an AVL tree and then stored as a simple linked binary tree.
+ */
+sheltered record VTableTree {
+    VTableTreeNode* root = null;
+}
+
+/* Classes store their methods in an array. If they only have a single line of
+ * inheritance, their superclass methods are included in that array. Otherwise,
+ * their superclass method tables are stored in a binary search tree. */
+public const record Class {
+    Bool isAbstract;
+    Bool multiheir;
+    sheltered Function[] methods;
+    sheltered VTableTree vtables;
+}
+
+/* Objects are reference types with runtime type. */
+public record ObjectRef {
+    const Class* type;
+    StaticFunction[] vtable;
+    /* This pointer is to an instance of a record called R__ClassName, where
+     * ClassName is the name of the class pointed to by the above member
+     * "type." */
+    const Pointer _;
+}
+
+/* Searches for the corresponding vtable when an object reference is assigned
+ * to a variable with a different declaration type than the reference being
+ * copied. The new declaration type *must* be the same as or a superclass of
+ * the runtime type of the object. */
+public Bool function update_decltype(ObjectRef obj, Class* decltype) {
+    VTableTreeNode* node;
+    Class* c = obj.type;
+
+    if (!c->multiheir || decltype == c) {
+        obj.vtable = &(c->methods);
+        return true;
+    }
+
+    node = c->vtables->root;
+    while (node != null) {
+        c = node->key;
+        if (decltype == c) {
+            obj.vtable = &(node->vtable);
+            return true;
+        } else if (decltype < c) {
+            node = node->left;
+        } else {
+            node = node->right;
+        }
+    }
+    return false;
+}

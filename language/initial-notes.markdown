@@ -1,0 +1,97 @@
+---
+geometry: margin=0.5in
+classoption: twocolumn
+---
+
+-   Statements
+    -   Assignments
+        -   Assignment
+        -   Add-Assign
+        -   Subtract-Assign
+        -   Multiply-Assign
+        -   Divide-By-Constant-Assign
+        -   Modulo-By-Constant-Assign
+        -   Left Shift-Assign
+        -   Right Shift-Assign (Logical and Arithmetic)
+        -   Bitwise AND-Assign
+        -   Bitwise XOR-Assign
+        -   Bitwise OR-Assign
+    -   Code Blocks
+    -   If-Then-Else
+    -   While
+    -   For (C-style)
+    -   For-Each (over arrays)
+    -   Labeled Break and Continue
+    -   Return
+-   Expressions
+    -   Literals
+        -   Integer
+        -   Fixed-Point
+        -   Character
+        -   String
+        -   Array
+    -   Arithmetic
+        -   Negation
+        -   Increment (Prefix and Postfix)
+        -   Decrement (Prefix and Postfix)
+        -   Multiplication
+        -   Divide-By-Constant
+        -   Modulo-Constant
+        -   Addition
+        -   Subtraction
+    -   Bitwise Operations
+        -   Inversion
+        -   Left Shift
+        -   Right Shift (Logical and Arithmetic)
+        -   Bitwise AND
+        -   Bitwise XOR
+        -   Bitwise OR
+    -   Comparison Operations
+        -   Equality
+        -   Inequality
+        -   Less-Than
+        -   Less-Than-Or-Equal-To
+        -   Greater-Than
+        -   Greater-Than-Or-Equal-To
+    -   Boolean Logic
+        -   Logical NOT
+        -   Logical AND
+        -   Logical OR
+    -   Function Calls
+        -   Void functions return zero.
+    -   Array Access
+        -   Optional bounds checking
+    -   Member Access
+    -   C-style order of operations
+
+\pagebreak
+
+-   Declarations
+    -   Elemental Variables
+        -   Integers: 16 bits, long 32 bits
+            -   Signed (default) and unsigned
+        -   Fixed-Point: 16 bits, long 32 bits
+            -   Signed (default) and unsigned
+            -   Requires specification of number of fractional bits.
+        -   Characters: 8 bits
+            -   Signed and unsigned (default)
+        -   Pointers: 16 bits
+        -   Arrays: 32 bits overhead (pointer and length)
+    -   Records
+        -   Like C structures
+    -   Functions
+        -   Functions are records with a jump pointer and metadata.
+        -   Functions support recursion.
+        -   Functions can be declared pure.
+    -   Classes
+        -   Multiple Inheritance (Priority List)
+        -   Abstract Methods
+        -   Objects are records with a pointer to a type record with a v-table.
+        -   Methods are functions that take the object as the first argument.
+        -   Access Specifiers
+            -   Private: Just this class.
+            -   Sheltered: Just this section.
+            -   Protected: Subclasses and this section.
+            -   Public: Anywhere.
+    -   Sections
+        -   Like C++ namespaces
