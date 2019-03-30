@@ -1,1 +1,1 @@
-8-bit computer from scratch. Currently working on a programming language.
+8-bit computer from scratch. <s>Currently</s> working on a programming language.
